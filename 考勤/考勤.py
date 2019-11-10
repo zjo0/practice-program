@@ -1,12 +1,12 @@
 import numpy as np
 import pandas as pd
-def unionrecord(officepath,dingdingpath,dayoffrecordpath):
+def unionrecord(officepath, dingdingpath, dayoffrecordpath):
     office_original = pd.read_excel(officepath)
     office_original['日期'] = pd.to_datetime(office_original['日期'])  # convert type from str to datetime
     dingding_original = pd.read_excel(dingdingpath, header=2)  # header=2 to ignore first two row
     dingding_original['日期'] = pd.to_datetime(dingding_original['日期'])
     office_record = office_original.set_index(['姓名', '日期']).loc[:, ['上班签到时间', '下班签退时间']].rename({'上班签到时间': '单位签到时间', '下班签退时间': '单位签退时间'}, axis='columns')  # set multiindex and rename them
-    dingding_sort = dingding_original.set_index(['姓名', '日期']).rename({'aBian': '卞庆荣'})
+    dingding_sort = dingding_original.set_index(['姓名', '日期']).rename({'aBian': '卞庆荣','李珺琪 yuki':'李珺琪'})
     dingding_onrecord = dingding_sort.groupby(['姓名', '日期']).min().loc[:, ['地点', '时间']].rename({'地点': '钉钉上班地', '时间': '钉钉上班时间'}, axis='columns')  # select the last item for each day as the last record time
     dingding_offrecord = dingding_sort.groupby(['姓名', '日期']).max().loc[:, ['地点', '时间']].rename({'地点': '钉钉下班地', '时间': '钉钉下班时间'}, axis='columns')  # select the first item for each day as the last record time
     dayoffrecord_original = pd.read_excel(dayoffrecordpath, header=1)
@@ -25,6 +25,7 @@ def unionrecord(officepath,dingdingpath,dayoffrecordpath):
     union_record = union_record.reindex(union_record.index.union(dayoffrecord.index).union(dingding_onrecord.index).union(dingding_offrecord.index))  # three DataFrame index united
     union_record = union_record.join(dingding_onrecord).join(dingding_offrecord).join(dayoffrecord)  # three DataFrame united
     union_record['是否正常'] = '异常'
+
 
     def detect(a):
         a1 = a2 = 0
@@ -47,6 +48,7 @@ def unionrecord(officepath,dingdingpath,dayoffrecordpath):
         return a
 
     union_record.apply(detect, axis=1)  # determine whether one person record has issue for each day
+    union_record.loc[union_record.index.get_level_values(1).weekday > 4, '是否正常'] = '周末'
     union_record.to_excel('union.xlsx')
     print('work done')
 
