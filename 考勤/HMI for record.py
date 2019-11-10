@@ -1,6 +1,6 @@
 from tkinter import *
 from tkinter import filedialog
-from 考勤 import xiexiejiange
+from 考勤 import unionrecord
 
 class Application(Frame):
     def __init__(self,master=None):
@@ -20,7 +20,7 @@ class Application(Frame):
         self.workoffLabel = Label(self, text='请假文件路径').grid(row=2, column=0)
         self.entry = Entry(self, textvariable=self.workoffpath).grid(row=2, column=1)
         self.selectButton3 = Button(self, text='路径选择', command=self.select_workoff_path).grid(row=2, column=2)
-        self.createButton=Button(self,text='生成汇总文件',command=lambda : xiexiejiange(self.officepath.get(),self.dingdingpath.get(),self.workoffpath.get())).grid(row=3)
+        self.createButton=Button(self,text='生成汇总文件',command=lambda : unionrecord(self.officepath.get(),self.dingdingpath.get(),self.workoffpath.get())).grid(row=3)
     def select_office_path(self):
         path1_=filedialog.askopenfilename()
         path1_=path1_.replace('/','\\\\')
