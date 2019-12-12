@@ -4,7 +4,7 @@ import time
 import threading
 import os
 headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36 QIHU 360SE'}
-chapter_link=requests.get('https://manhua.fzdm.com/39/',headers=headers,timeout=5)
+chapter_link=requests.get('https://manhua.fzdm.com/39/',timeout=5)
 chapter_link_get=re.findall('<a href="([^<]*?)" title="(进击的巨人.*?)">',chapter_link.text)
 print(len(chapter_link_get))
 g_lock=threading.Lock()
@@ -16,7 +16,7 @@ def downloadpic(chapterurl,page,failpage,pic):
     global headers
     try:
         pageresponse=requests.get(pageurl,headers=headers,timeout=5)
-        if pageresponse.status_code==404:
+        if pageresponse.status_code==404 or pageresponse.status_code==500:
             return 0
         picurllast=re.findall('var mhurl="(.*?)"',pageresponse.text)[0]
         picurl='http://www-mipengine-org.mipcdn.com/i/p1.manhuapan.com/'+picurllast
@@ -43,7 +43,7 @@ class download(threading.Thread):
             failpage=[]
             page=1
             status=2
-            while status!=0:
+            for i in range(70):
                 pic=[]
                 status=downloadpic(url,page,failpage,pic)
                 if status==0:
@@ -61,9 +61,11 @@ class download(threading.Thread):
                         with open('进击的巨人\%s\%s.jpg' % (title, thisroundpage), 'wb') as f:
                             f.write(pic[0])
                 failpage=thisroundfailpage
-            with open('进击的巨人\%s\failpage.txt'%title,'w') as f:
-                f.write(list(failpage))
+
+            if len(failpage)>0:
+                with open('进击的巨人\%sfailpage.txt'%title,'w') as f:
+                    f.write(" ".join(failpage))
 if __name__=='__main__':
-    for x in range(10):
+    for x in range(20):
         gospider=download()
         gospider.start()
