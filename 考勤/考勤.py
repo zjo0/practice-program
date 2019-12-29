@@ -32,9 +32,13 @@ def unionrecord(officepath, dingdingpath, dayoffrecordpath):
         if (a['单位签到时间'] == a['单位签到时间']):
             if (a['单位签到时间'] < '09:30:00'):
                 a1 = 1
+            if (a['单位签到时间'] < '06:00:00'):
+                a1 = 3
         if (a['钉钉上班时间'] == a['钉钉上班时间']):
             if (a['钉钉上班时间'] < '09:30:00'):
                 a1 = 1
+            if (a['钉钉上班时间'] < '06:00:00'):
+                a1 = 3
         if (a['单位签退时间'] == a['单位签退时间']):
             if (a['单位签退时间'] > '18:00:00'):
                 a2 = 1
@@ -45,6 +49,8 @@ def unionrecord(officepath, dingdingpath, dayoffrecordpath):
             a['是否正常'] = '正常'
         if (a['是否请假'] == True):
             a['是否正常'] = '正常'
+        if (a1==3):
+            a['是否正常']= '凌晨有打卡'
         return a
 
     union_record.apply(detect, axis=1)  # determine whether one person record has issue for each day
