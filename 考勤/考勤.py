@@ -14,8 +14,20 @@ def unionrecord(officepath, dingdingpath, dayoffrecordpath,year_,month_):
         dingding_original = pd.read_excel(dingdingpath, header=2)  # header=2 to ignore first two row
         dingding_original['日期'] = pd.to_datetime(dingding_original['日期'])
         dingding_sort = dingding_original.set_index(['姓名', '日期']).rename({'aBian': '卞庆荣','李珺琪 yuki':'李珺琪'})
-        dingding_onrecord = dingding_sort.groupby(['姓名', '日期']).min().loc[:, ['地点', '时间']].rename({'地点': '钉钉上班地', '时间': '钉钉上班时间'}, axis='columns')  # select the last item for each day as the last record time
-        dingding_offrecord = dingding_sort.groupby(['姓名', '日期']).max().loc[:, ['地点', '时间']].rename({'地点': '钉钉下班地', '时间': '钉钉下班时间'}, axis='columns')  # select the first item for each day as the last record time
+        def onoffice(x):
+            x=x.sort_values(by='时间')
+            d={}
+            d['钉钉上班地']=x['地点'].iloc[0]
+            d['钉钉上班时间']=x['时间'].iloc[0]
+            return pd.Series(d,index=['钉钉上班地','钉钉上班时间'])
+        def offoffice(x):
+            x=x.sort_values(by='时间')
+            d={}
+            d['钉钉下班地']=x['地点'].iloc[-1]
+            d['钉钉下班时间']=x['时间'].iloc[-1]
+            return pd.Series(d,index=['钉钉下班地','钉钉下班时间'])
+        dingding_onrecord = dingding_sort.groupby(['姓名', '日期']).apply(onoffice) # select the last item for each day as the last record time
+        dingding_offrecord = dingding_sort.groupby(['姓名', '日期']).apply(offoffice)  # select the first item for each day as the last record time
     except:
         print('钉钉打卡记录读取失败')
         dingding_onrecord = pd.DataFrame(columns=['姓名','日期','钉钉上班地','钉钉上班时间']).set_index(['姓名','日期'])#读取钉钉打卡记录失败后，建立空文件
