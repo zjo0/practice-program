@@ -50,12 +50,12 @@ def unionrecord(officepath, dingdingpath, dayoffrecordpath,dingdingonpath,year_,
         print('请假记录读取失败')
         dayoffrecord =pd.DataFrame(columns=['姓名','日期','是否请假']).set_index(['姓名','日期'])#读取请假记录失败后，建立空文件
     try:
-        dingdingworkon_original=pd.read_excel(dingdingonpath,,sheet_name='每日统计',header=2)
+        dingdingworkon_original=pd.read_excel(dingdingonpath,sheet_name='每日统计',header=2)
         dingdingworkon_original=dingdingworkon_original.drop([0])
         def datedropweek(a):
             a['日期']=str(a['日期']).split(' ')[0]
             return a
-        dingdingworkon_record=dingdingworkon_original.apply(datefit,axis=1)
+        dingdingworkon_record=dingdingworkon_original.apply(datedropweek,axis=1)
         dingdingworkon_record['日期']=pd.to_datetime(dingdingworkon_record['日期'],format='%y-%m-%d')
         dingdingworkon_record=dingdingworkon_record.set_index(['姓名', '日期']).loc[:, ['上班1', '下班1']].rename({'上班1': '钉钉上班考勤', '下班1': '钉钉下班考勤'},axis='columns')
     except:
