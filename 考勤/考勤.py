@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import calendar
-def unionrecord(officepath, dingdingpath, dayoffrecordpath,year_,month_):
+def unionrecord(officepath, dingdingpath, dayoffrecordpath,dingdingonpath,year_,month_):
     wholedate=pd.date_range('%s-%s-01'%(year_,month_),periods=calendar.monthrange(year_,month_)[1])
     try:
         office_original = pd.read_excel(officepath)
@@ -49,11 +49,23 @@ def unionrecord(officepath, dingdingpath, dayoffrecordpath,year_,month_):
     except:
         print('请假记录读取失败')
         dayoffrecord =pd.DataFrame(columns=['姓名','日期','是否请假']).set_index(['姓名','日期'])#读取请假记录失败后，建立空文件
+    try:
+        dingdingworkon_original=pd.read_excel(dingdingonpath,,sheet_name='每日统计',header=2)
+        dingdingworkon_original=dingdingworkon_original.drop([0])
+        def datedropweek(a):
+            a['日期']=str(a['日期']).split(' ')[0]
+            return a
+        dingdingworkon_record=dingdingworkon_original.apply(datefit,axis=1)
+        dingdingworkon_record['日期']=pd.to_datetime(dingdingworkon_record['日期'],format='%y-%m-%d')
+        dingdingworkon_record=dingdingworkon_record.set_index(['姓名', '日期']).loc[:, ['上班1', '下班1']].rename({'上班1': '钉钉上班考勤', '下班1': '钉钉下班考勤'},axis='columns')
+    except:
+        print('钉钉考勤读取失败')
+        dingdingworkon_record=pd.DataFrame(columns=['姓名','日期','钉钉上班考勤','钉钉下班考勤']).set_index(['姓名','日期'])#读取请假记录失败后，建立空文件
     union_record = office_record.copy()
-    union_record = union_record.reindex(union_record.index.union(dayoffrecord.index).union(dingding_onrecord.index).union(dingding_offrecord.index))  # three DataFrame index united
+    union_record = union_record.reindex(union_record.index.union(dayoffrecord.index).union(dingding_onrecord.index).union(dingding_offrecord.index).union(dingdingworkon_record.index))  # three DataFrame index united
     wholeindex=pd.MultiIndex.from_product([union_record.index.get_level_values(0).drop_duplicates(),wholedate],names=['姓名','日期'])#读取三个文件中提到的所有姓名，与本月所有的日期组成MultiIndex
     union_record=union_record.reindex(union_record.index.union(wholeindex))
-    union_record = union_record.join(dingding_onrecord).join(dingding_offrecord).join(dayoffrecord)  # three DataFrame united
+    union_record = union_record.join(dingding_onrecord).join(dingding_offrecord).join(dayoffrecord).join(dingdingworkon_record)  # three DataFrame united
     union_record['是否正常'] = '异常'
 
 
@@ -69,11 +81,19 @@ def unionrecord(officepath, dingdingpath, dayoffrecordpath,year_,month_):
                 a1 = 1
             if (a['钉钉上班时间'] < '06:00:00'):
                 a1 = 3
+        if (a['钉钉上班考勤'] == a['钉钉上班考勤']):
+            if (a['钉钉上班考勤'] < '09:30:00'):
+                a1 = 1
+            if (a['钉钉上班考勤'] < '06:00:00'):
+                a1 = 3
         if (a['单位签退时间'] == a['单位签退时间']):
             if (a['单位签退时间'] > '18:00:00'):
                 a2 = 1
         if (a['钉钉下班时间'] == a['钉钉下班时间']):
             if (a['钉钉下班时间'] > '18:00:00'):
+                a2 = 1
+        if (a['钉钉下班考勤'] == a['钉钉下班考勤']):
+            if (a['钉钉下班考勤'] > '18:00:00'):
                 a2 = 1
         if (a1 + a2 == 2):
             a['是否正常'] = '正常'
@@ -92,6 +112,7 @@ if __name__ == '__main__':
     officepath = input('办公室打卡文件带路径,类似\nD:\Desktop\考勤记录表20191031-上海公司.xls\n')
     dingdingpath = input('钉钉打卡文件带路径,类似\nD:\Desktop\钉钉签到报表(上海业务平台).xls\n')
     dayoffrecordpath = input('请假记录,类似\nD:Desktop\dataset.xls\n')
-    unionrecord(officepath,dingdingpath,dayoffrecordpath)
+    dingdingonpath = input('钉钉考勤记录,类似\nD:Desktop\dataset.xls\n')
+    unionrecord(officepath,dingdingpath,dayoffrecordpath,dingdingonpath)
 
 
