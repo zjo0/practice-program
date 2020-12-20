@@ -105,6 +105,7 @@ def unionrecord(officepath, dingdingpath, dayoffrecordpath,dingdingonpath,year_,
 
     union_record.apply(detect, axis=1)  # determine whether one person record has issue for each day
     union_record.loc[union_record.index.get_level_values(1).weekday>4,'是否正常'] ='周末'
+    union_record=union_record.rename({'单位签到时间': '指纹上班时间', '单位签退时间': '指纹下班时间', '钉钉上班地': '钉钉签到上班地点', '钉钉上班时间': '钉钉签到上班时间', '钉钉下班地': '钉钉签到上班地点', '钉钉下班时间': '钉钉签到下班时间', '钉钉上班考勤': '钉钉考勤上班时间', '钉钉下班考勤': '钉钉考勤下班时间'}, axis='columns')
     union_record.to_excel('union.xlsx')
     print('work done')
 
