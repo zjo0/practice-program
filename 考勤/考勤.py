@@ -35,20 +35,27 @@ def unionrecord(officepath, dingdingpath, dayoffrecordpath,dingdingonpath,year_,
     
 
     def huizong(a,dayoffrecord_):
-        b = pd.DataFrame(index=pd.Index(pd.date_range(a['开始时间'], a['结束时间'], freq='D'), name='日期'))
+        startday,starthalf=a['请假开始时间'].split(' ')
+        endday,endhalf=a['请假结束时间'].split(' ')
+        b = pd.DataFrame(index=pd.Index(pd.date_range(startday, endday, freq='D'), name='日期'),columns=['姓名','上午请假','下午请假'])
         b['姓名'] = a['员工姓名']
-        b['是否请假'] = True
+        b['上午请假'] = True
+        b['下午请假']= True
+        if starthalf=="下午":
+            b.iloc[0,1]=False
+        if endhalf=="上午":
+            b.iloc[-1,2]=False
         dayoffrecord_[0] = dayoffrecord_[0].append(b)
 
     try:
-        dayoffrecord_original = pd.read_excel(dayoffrecordpath, header=1)
-        dayoffrecord_ = [pd.DataFrame(columns=['姓名', '日期', '是否请假']).set_index('日期')]
+        dayoffrecord_original = pd.read_excel(dayoffrecordpath, header=0)
+        dayoffrecord_ = [pd.DataFrame(columns=['姓名', '日期', '上午请假','下午请假']).set_index('日期')]
         dayoffrecord_original.apply(lambda x:huizong(x,dayoffrecord_),axis=1)  # work off start date and end date are listed in the same row in the original data
         dayoffrecord = dayoffrecord_[0]
         dayoffrecord = dayoffrecord.set_index(['姓名', dayoffrecord.index]).sort_values(['姓名', '日期'])
     except:
         print('请假记录读取失败')
-        dayoffrecord =pd.DataFrame(columns=['姓名','日期','是否请假']).set_index(['姓名','日期'])#读取请假记录失败后，建立空文件
+        dayoffrecord =pd.DataFrame(columns=['姓名','日期','上午请假','下午请假']).set_index(['姓名','日期'])#读取请假记录失败后，建立空文件
     try:
         dingdingworkon_original=pd.read_excel(dingdingonpath,sheet_name='每日统计',header=2)
         dingdingworkon_original=dingdingworkon_original.drop([0])
@@ -70,34 +77,58 @@ def unionrecord(officepath, dingdingpath, dayoffrecordpath,dingdingonpath,year_,
 
 
     def detect(a):
-        a1 = a2 = 0
+        a1 = a2 = a11=a21=0
+        morningoff=afternoonoff=False
+        if a['上午请假']==True:
+            morningoff=True
+        if a['下午请假']==True:
+            afternoonoff=True
+
         if (a['单位签到时间'] == a['单位签到时间']):
             if (a['单位签到时间'] < '09:30:00'):
                 a1 = 1
+            if (a['单位签到时间'] < '13:00:00'):
+                a11 = 1
             if (a['单位签到时间'] < '06:00:00'):
                 a1 = 3
         if (a['钉钉上班时间'] == a['钉钉上班时间']):
             if (a['钉钉上班时间'] < '09:30:00'):
                 a1 = 1
+            if (a['钉钉上班时间'] < '13:00:00'):
+                a11 = 1
             if (a['钉钉上班时间'] < '06:00:00'):
                 a1 = 3
         if (a['钉钉上班考勤'] == a['钉钉上班考勤']):
             if (a['钉钉上班考勤'] < '09:30:00'):
                 a1 = 1
+            if (a['钉钉上班考勤'] < '13:00:00'):
+                a11 = 1
             if (a['钉钉上班考勤'] < '06:00:00'):
                 a1 = 3
+        if morningoff==True:
+            if a11==1:
+                a1=1
         if (a['单位签退时间'] == a['单位签退时间']):
             if (a['单位签退时间'] > '18:00:00'):
                 a2 = 1
+            if (a['单位签退时间'] > '12:00:00'):
+                a21 = 1
         if (a['钉钉下班时间'] == a['钉钉下班时间']):
             if (a['钉钉下班时间'] > '18:00:00'):
                 a2 = 1
+            if (a['钉钉下班时间'] > '12:00:00'):
+                a21 = 1
         if (a['钉钉下班考勤'] == a['钉钉下班考勤']):
             if (a['钉钉下班考勤'] > '18:00:00'):
                 a2 = 1
+            if (a['钉钉下班考勤'] > '12:00:00'):
+                a21 = 1
+        if afternoonoff==True:
+            if a21==1:
+                a2=1
         if (a1 + a2 == 2):
             a['是否正常'] = '正常'
-        if (a['是否请假'] == True):
+        if (morningoff == True & afternoonoff==True):
             a['是否正常'] = '正常'
         if (a1==3):
             a['是否正常']='凌晨有打卡'
